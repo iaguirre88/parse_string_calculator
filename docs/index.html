@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Erlang parse tools</title>
+    <meta charset="utf-8">
+    <style>
+      @import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
+      @import url(https://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic);
+      @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+
+      body { font-family: 'Droid Serif'; }
+      h1, h2, h3 {
+        font-family: 'Yanone Kaffeesatz';
+        font-weight: normal;
+      }
+      .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
+      img {
+	width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+
+class: center, middle
+# Erlang parser tools
+
+---
+## Motivation
+### Pretty print formatter
+
+.left[![Screenshot](./pretty_print_screenshot.png)]
+
+> Elixir library for coloring the output of the logger. Right now it colorizes Ecto SQL statements and Phoenix's request id metadata.
+> The idea is to use colors as a way to help developers to spot easier in the console what's happening quickly.
+>> https://github.com/san650/pretty_print_formatter
+
+---
+## Motivation
+### Pretty print formatter
+
+#### Input
+```elixir
+"SELECT * FROM users AS u0 WHERE u0.id = 5 LIMIT 10 OFFSET 50"
+```
+
+#### Output
+```elixir
+[
+	{:keyword, 'SELECT'},
+	{:operator, '*'},
+	{:keyword, 'FROM'},
+	{:name, 'users'},
+	{:keyword, 'AS'},
+	. . .
+]
+```
+
+???
+* Mention it's used to colorize the keywords
+* Mention how hard it would be to code those rules by ourselves.
+
+---
+class: center, middle
+## Erlang parse tools
+
+---
+### Leex
+* Lexical analyzer generator for Erlang.
+
+* Takes a string and returns a list of tokens.
+
+* This rules are defined in a `.xrl` file.
+
+* Takes that file as input and generates Erlang code.
+
+---
+```leex
+Definitions.
+
+INTEGER    = [0-9]+
+FLOAT      = [0-9]+\.[0-9]+((E|e)(\+|\-)?[0-9]+)?
+WHITESPACE = [\s\t\n\r]+
+
+Rules.
+
+{INTEGER} :
+  {token, {integer, TokenLine, TokenChars}}.
+
+{FLOAT} :
+  {token, {float, TokenLine, TokenChars}}.
+
+\+ :
+  {token, {'+', TokenLine}
+
+{WHITESPACE} : skip_token.
+
+Erlang code.
+
+% Erlang code
+```
+
+--
+#### Example
+```elixir
+"2 + 5.3" |> to_charlist |> :lexer.string
+# [{:integer, 1, "2"}, {:+, 1}, {:float, 1, "5.3"}]
+```
+
+???
+* TokenLine: returns the line
+* TokenChars: the matched string in the regex
+* Show the an example with "select"
+* Mention in creates an erlang module with the name of the file. Implements "string"
+
+---
+### Yecc
+* Parser generator for Erlang (similar to `leex`).
+
+* Takes a list of token and creates an structure (usually a tree) that we can process later.
+
+* Takes a `.yrl` file with the grammar rules and generates Erlang code.
+
+???
+* Grammar defined using Backus-Naur form
+
+---
+```yrl
+Nonterminals E.
+
+Terminals '+' '*' '(' ')' integer float.
+
+Rootsymbol E.
+
+Left 100 '+'.
+Left 200 '*'.
+
+E -> E '+' E   : {'$2', '$1', '$3'}.
+E -> E '*' E   : {'$2', '$1', '$3'}.
+E -> '(' E ')' : '$2'.
+E -> integer   : '$1'.
+E -> float     : '$1'.
+
+Erlang code.
+
+% Erlang code
+```
+
+--
+#### Example
+```elixir
+"2 + 5 * 3" |> to_charlist |> :lexer.string |> :grammar.parse
+#  {{:+, 1},
+#    {:number, 1, 2},
+#    {{:*, 1},
+#      {:number, 1, 5},
+#      {:number, 1, 3}
+#    }
+#  }
+```
+
+???
+Mention an example with other nonterminal element
+
+---
+class: center, middle
+# Let's see some code in action!
+
+---
+class: credits
+# Thanks!
+  
+### Ignacio Aguirrezabal
+* **GitHub**:  https://github.com/iaguirre88
+* **Twitter**: https://twitter.com/iaguirre88
+
+
+#### References
+* **pretty_print_formatter**: https://github.com/san650/pretty_print_formatter
+
+* **Tokenizing and parsing in Elixir with yecc and leex**: https://andrealeopardi.com/posts/tokenizing-and-parsing-in-elixir-using-leex-and-yecc/
+
+* **Erlang Parse Tools Reference Manual**: http://erlang.org/doc/apps/parsetools/index.html
+
+    </textarea>
+    <script src="https://remarkjs.com/downloads/remark-latest.min.js">
+    </script>
+    <script>
+      var slideshow = remark.create();
+    </script>
+  </body>
+</html>
