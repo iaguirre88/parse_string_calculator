@@ -1,6 +1,6 @@
 # Calculator
 
-**Slides**: https://iaguirre88.github.io/string_calculator
+**Slides**: https://iaguirre88.github.io/parse_string_calculator/
 
 Simple toy app to test [yecc](http://erlang.org/doc/man/yecc.html) and
 [leex](http://erlang.org/doc/man/leex.html).
